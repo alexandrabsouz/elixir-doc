@@ -19,22 +19,22 @@ defmodule FriendsApp.DB.CSV do
     File.read!("#{File.cwd!}/friends.csv")
     |> CSVparser.parse_string(headers: false)
     |> Enum.map(fn [email, name, phone] ->
-      %{name: name, email: email, phone: phone}
+      %Friend{name: name, email: email, phone: phone}
     end)
     |> Scribe.console(data: [{"Nome", :name}, {"Email", :email}, {"Telefone", :phone}])
   end
+
   defp create do
     collect_data()
-    |> Map.values
-    |> wrap_in_list
-    |> CSVparser.dump_to_iodata
-    |> save_csv_file
+    |> transform_on_wrapped_list()
+    |> prepare_list_save_csv()
+    |> save_csv_file([:append])
   end
 
   defp collect_data do
     Shell.cmd("clear")
 
-    %{
+    %Friend{
       name: prompt_message("Digite o nome: "),
       email: prompt_message("Digite o email: "),
       phone: prompt_message("Digite o telefone: ")
@@ -46,11 +46,23 @@ defmodule FriendsApp.DB.CSV do
     |> String.trim
   end
 
+  defp transform_on_wrapped_list(list) do
+    list
+    |> Map.from_struct()
+    |> Map.values()
+    |> wrap_in_list
+  end
+
   defp wrap_in_list(list) do
     [list]
   end
 
-  defp save_csv_file(data) do
-    File.write!("#{File.cwd!}/friends.csv", data, [:append])
+  defp prepare_list_save_csv(list) do
+    list
+    |> CSVparser.dump_to_iodata
+  end
+
+  defp save_csv_file(data, mode \\ []) do
+    File.write!("#{File.cwd!}/friends.csv", data, mode)
   end
 end
